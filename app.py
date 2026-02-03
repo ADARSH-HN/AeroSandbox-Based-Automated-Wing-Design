@@ -11,7 +11,7 @@ from config import *
 from airfoil_analysis import AirfoilAnalyzer, create_combined_dataframe
 from scoring import AirfoilScorer
 from wing_design import WingDesigner, WingAnalyzer, WingSelector
-from visualization import AirfoilPlotter, ComparisonPlotter, create_ranking_barplot
+from visualization import AirfoilPlotter, ComparisonPlotter, create_ranking_barplot, plot_airfoil_shape
 from utils import save_dataframe_csv
 
 # Page config
@@ -105,14 +105,23 @@ def main():
                 help="Path to folder containing .dat airfoil files"
             )
             
+            # Show airfoil shape preview
             if os.path.exists(airfoils_folder):
                 dat_files = [f for f in os.listdir(airfoils_folder) if f.endswith('.dat')]
                 st.success(f"✓ Found {len(dat_files)} airfoil files")
-                with st.expander("View airfoil files"):
-                    for f in dat_files:
-                        st.text(f"  • {f}")
-            else:
-                st.error("❌ Airfoils folder not found!")
+                if dat_files:
+                    preview_airfoil = st.selectbox(
+                        "Select airfoil to preview",
+                        dat_files,
+                        key="preview_airfoil"
+                    )
+                    try:
+                        airfoil_path = os.path.join(airfoils_folder, preview_airfoil)
+                        fig, ax = plot_airfoil_shape(airfoil_path, show=False)
+                        st.pyplot(fig)
+                        plt.close()
+                    except Exception as e:
+                        st.error(f"Error plotting airfoil: {e}")
             
             # Design parameters
             st.subheader("Design Parameters")
@@ -154,30 +163,34 @@ def main():
                 st.error("Please configure parameters in Home tab first!")
                 return
             
-            with st.spinner("Analyzing airfoils... This may take several minutes..."):
-                try:
-                    # Initialize analyzer
-                    analyzer = AirfoilAnalyzer(
-                        st.session_state.airfoils_folder,
-                        velocity=st.session_state.velocity
-                    )
-                    
-                    # Run analysis
-                    output_file = os.path.join(OUTPUT_FOLDER, NEURALFOIL_OUTPUT_CSV)
-                    progress_bar = st.progress(0)
-                    status_text = st.empty()
-                    
-                    status_text.text("Running NeuralFoil analysis...")
-                    db = analyzer.analyze_all_airfoils(output_file)
-                    progress_bar.progress(100)
-                    
-                    # Store in session state
-                    st.session_state.db = db
-                    st.session_state.analysis_complete = True
-                    
-                    st.success(f"✓ Analysis complete! Analyzed {db['airfoil_name'].nunique()} airfoils")                    
-                except Exception as e:
-                    st.error(f"Error during analysis: {e}")
+            try:
+                # Initialize analyzer
+                analyzer = AirfoilAnalyzer(
+                    st.session_state.airfoils_folder,
+                    velocity=st.session_state.velocity
+                )
+                
+                # Run analysis with progress bar
+                output_file = os.path.join(OUTPUT_FOLDER, NEURALFOIL_OUTPUT_CSV)
+                progress_bar = st.progress(0)
+                status_text = st.empty()
+                
+                def update_progress(current, total, message):
+                    progress = int((current / total) * 100)
+                    progress_bar.progress(progress)
+                    status_text.text(message)
+                
+                status_text.text("Starting NeuralFoil analysis...")
+                db = analyzer.analyze_all_airfoils(output_file, progress_callback=update_progress)
+                progress_bar.progress(100)
+                
+                # Store in session state
+                st.session_state.db = db
+                st.session_state.analysis_complete = True
+                
+                st.success(f"✓ Analysis complete! Analyzed {db['airfoil_name'].nunique()} airfoils")                    
+            except Exception as e:
+                st.error(f"Error during analysis: {e}")
         
         # Display results if available
         if st.session_state.analysis_complete and st.session_state.db is not None:
@@ -317,10 +330,11 @@ def main():
         with col2:
             st.metric("MTOW", f"{st.session_state.mtow} kg")
         
-        # Step 1: Generate configurations
-        if st.button("Generate Wing Configurations", type="primary", use_container_width=True):
-            with st.spinner("Generating wing configurations..."):
-                try:
+        # Step 1: Generate configurations and run VLM analysis
+        if st.button("Generate Wing Configurations & Run VLM Analysis", type="primary", use_container_width=True):
+            try:
+                # Step 1a: Generate configurations
+                with st.spinner("Generating wing configurations..."):
                     designer = WingDesigner(
                         velocity=st.session_state.velocity,
                         max_wingspan=st.session_state.max_span,
@@ -334,91 +348,82 @@ def main():
                     
                     # Show preview
                     st.dataframe(wing_configs.head(20), use_container_width=True)
+                
+                # Step 1b: Run VLM analysis immediately
+                st.markdown("---")
+                st.subheader("Running VLM Analysis...")
+                
+                analyzer = WingAnalyzer(st.session_state.airfoils_folder)
+                
+                progress_bar = st.progress(0)
+                status_text = st.empty()
+                
+                def update_progress(current, total, message):
+                    progress = int((current / total) * 100)
+                    progress_bar.progress(progress)
+                    status_text.text(message)
+                
+                status_text.text("Starting VLM analysis...")
+                # Run analysis with progress updates
+                wing_para_df = analyzer.analyze_all_wings(
+                    st.session_state.wing_configs,
+                    progress_callback=update_progress
+                )
+                progress_bar.progress(100)
+                status_text.text("VLM analysis complete!")
+                
+                st.session_state.wing_para_df = wing_para_df
+                
+                # Save results
+                output_file = os.path.join(OUTPUT_FOLDER, FINAL_WING_DATA_CSV)
+                save_dataframe_csv(wing_para_df, output_file)
+                
+                st.success("✓ Wing configurations generated and VLM analysis complete!")
+                
+                # Step 1c: Filter suitable wings immediately
+                st.markdown("---")
+                st.subheader("Filtering Suitable Wings...")
+                
+                with st.spinner("Filtering wings that meet MTOW requirement..."):
+                    selector = WingSelector(
+                        mtow_kgs=st.session_state.mtow,
+                        velocity=st.session_state.velocity
+                    )
                     
-                except Exception as e:
-                    st.error(f"Error generating configurations: {e}")
-        
-        # Step 2: Run VLM analysis
-        if 'wing_configs' in st.session_state:
-            st.markdown("---")
-            
-            run_vlm = st.checkbox("Run VLM Analysis (may take time)", value=False)
-            
-            if run_vlm:
-                if st.button("🔬 Run VLM Analysis", type="primary", use_container_width=True):
-                    with st.spinner("Running VLM analysis... This will take several minutes..."):
-                        try:
-                            analyzer = WingAnalyzer(st.session_state.airfoils_folder)
-                            
-                            progress_bar = st.progress(0)
-                            status_text = st.empty()
-                            
-                            # Run analysis with progress updates
-                            wing_para_df = analyzer.analyze_all_wings(st.session_state.wing_configs)
-                            progress_bar.progress(100)
-                            
-                            st.session_state.wing_para_df = wing_para_df
-                            
-                            # Save results
-                            output_file = os.path.join(OUTPUT_FOLDER, FINAL_WING_DATA_CSV)
-                            save_dataframe_csv(wing_para_df, output_file)
-                            
-                            st.success("✓ VLM analysis complete!")
-                            
-                        except Exception as e:
-                            st.error(f"Error during VLM analysis: {e}")
-            else:
-                # Skip VLM and use configs directly
-                st.info("ℹVLM analysis skipped. Using approximate aerodynamics.")
-                st.session_state.wing_para_df = st.session_state.wing_configs.copy()
-        
-        # Step 3: Filter suitable wings
-        if 'wing_para_df' in st.session_state:
-            st.markdown("---")
-            st.subheader("Suitable Wings Meeting MTOW")
-            
-            if st.button("Filter Suitable Wings", type="primary", use_container_width=True):
-                with st.spinner("Filtering wings..."):
-                    try:
-                        selector = WingSelector(
-                            mtow_kgs=st.session_state.mtow,
-                            velocity=st.session_state.velocity
+                    suitable_df = selector.filter_suitable_wings(wing_para_df)
+                    
+                    if len(suitable_df) == 0:
+                        st.error("❌ No wings meet the MTOW requirement!")
+                    else:
+                        ranked_suitable = selector.rank_suitable_wings(suitable_df)
+                        st.session_state.suitable_wings_df = ranked_suitable
+                        
+                        st.success(f"✓ Found {len(ranked_suitable)} suitable wings!")
+                        
+                        # Display results
+                        st.dataframe(
+                            ranked_suitable[[
+                                "airfoil_name", "Aspect_Ratio", "Suitable_chord",
+                                "Wingspan_m", "Lift_Kgs", "MAX_CL/CD", "final_score"
+                            ]].head(20),
+                            use_container_width=True
                         )
                         
-                        suitable_df = selector.filter_suitable_wings(st.session_state.wing_para_df)
+                        # Save
+                        output_file = os.path.join(OUTPUT_FOLDER, SUITABLE_WINGS_CSV)
+                        save_dataframe_csv(ranked_suitable, output_file)
                         
-                        if len(suitable_df) == 0:
-                            st.error("❌ No wings meet the MTOW requirement!")
-                        else:
-                            ranked_suitable = selector.rank_suitable_wings(suitable_df)
-                            st.session_state.suitable_wings_df = ranked_suitable
-                            
-                            st.success(f"✓ Found {len(ranked_suitable)} suitable wings!")
-                            
-                            # Display results
-                            st.dataframe(
-                                ranked_suitable[[
-                                    "airfoil_name", "Aspect_Ratio", "Suitable_chord",
-                                    "Wingspan_m", "Lift_Kgs", "MAX_CL/CD", "final_score"
-                                ]].head(20),
-                                use_container_width=True
-                            )
-                            
-                            # Save
-                            output_file = os.path.join(OUTPUT_FOLDER, SUITABLE_WINGS_CSV)
-                            save_dataframe_csv(ranked_suitable, output_file)
-                            
-                            # Download
-                            csv = ranked_suitable.to_csv(index=False).encode('utf-8')
-                            st.download_button(
-                                label="📥 Download Suitable Wings",
-                                data=csv,
-                                file_name="suitable_wings.csv",
-                                mime="text/csv"
-                            )
-                    
-                    except Exception as e:
-                        st.error(f"Error filtering wings: {e}")
+                        # Download
+                        csv = ranked_suitable.to_csv(index=False).encode('utf-8')
+                        st.download_button(
+                            label="📥 Download Suitable Wings",
+                            data=csv,
+                            file_name="suitable_wings.csv",
+                            mime="text/csv"
+                        )
+                
+            except Exception as e:
+                st.error(f"Error: {e}")
     
     # ===== TAB 5: VISUALIZATIONS =====
     with tab5:
