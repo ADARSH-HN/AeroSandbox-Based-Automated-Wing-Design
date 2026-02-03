@@ -1,4 +1,4 @@
-# ✈️ Wing Analyzer Pro
+# ✈️ Wing Analyzer 
 
 **Aerodynamic Analysis & Wing Design Tool for RC Aircraft**
 
