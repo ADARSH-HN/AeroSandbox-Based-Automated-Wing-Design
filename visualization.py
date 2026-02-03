@@ -2,6 +2,7 @@
 Visualization Module
 Handles all plotting and chart generation
 """
+import os
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
@@ -343,6 +344,44 @@ class ComparisonPlotter:
             plt.show()
         
         return fig, ax
+
+
+def plot_airfoil_shape(airfoil_path, show=True):
+    """
+    Plot the geometry/shape of an airfoil
+    
+    Args:
+        airfoil_path: Path to the .dat airfoil file
+        show: If True, displays plot immediately
+    
+    Returns:
+        Figure and axes objects
+    """
+    import aerosandbox as asb
+    
+    airfoil = asb.Airfoil(airfoil_path)
+    airfoil_name = os.path.basename(airfoil_path).split('.')[0]
+    
+    fig, ax = plt.subplots(figsize=(12, 4), dpi=PLOT_DPI)
+    
+    # Plot airfoil coordinates
+    ax.plot(airfoil.coordinates[:, 0], airfoil.coordinates[:, 1], 
+           'b-', linewidth=2, label='Airfoil Shape')
+    ax.fill(airfoil.coordinates[:, 0], airfoil.coordinates[:, 1], 
+           alpha=0.2, color='steelblue')
+    
+    ax.set_xlabel('x/c', fontsize=12)
+    ax.set_ylabel('y/c', fontsize=12)
+    ax.set_title(f'Airfoil Geometry - {airfoil_name}', fontsize=14, fontweight='bold')
+    ax.grid(True, alpha=0.3)
+    ax.set_aspect('equal')
+    ax.legend()
+    plt.tight_layout()
+    
+    if show:
+        plt.show()
+    
+    return fig, ax
 
 
 def create_ranking_barplot(ranked_df, top_n=10, show=True):
