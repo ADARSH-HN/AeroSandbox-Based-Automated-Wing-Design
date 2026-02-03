@@ -41,7 +41,7 @@ class AirfoilAnalyzer:
         file_path = os.path.join(self.airfoils_folder, airfoil_file)
         airfoil_name = airfoil_file.split(".")[0]
         
-        print(f"Analyzing {airfoil_name}...")
+        print(f"Analyzing The Airfoil  {airfoil_name}")
         
         # Load and convert airfoil
         af = asb.Airfoil(file_path)
@@ -76,12 +76,13 @@ class AirfoilAnalyzer:
         
         return df
     
-    def analyze_all_airfoils(self, output_file):
+    def analyze_all_airfoils(self, output_file, progress_callback=None):
         """
         Analyze all airfoil files in the folder
         
         Args:
             output_file: Path to save combined results CSV
+            progress_callback: Optional callback function(current, total, message)
         
         Returns:
             pandas DataFrame with all results
@@ -95,9 +96,13 @@ class AirfoilAnalyzer:
             raise ValueError(f"No .dat files found in {self.airfoils_folder}")
         
         all_results = []
+        total = len(airfoil_files)
         
-        for airfoil_file in airfoil_files:
+        for idx, airfoil_file in enumerate(airfoil_files):
             try:
+                if progress_callback:
+                    progress_callback(idx, total, f"Analyzing {airfoil_file.split('.')[0]}...")
+                
                 df = self.analyze_airfoil(airfoil_file)
                 all_results.append(df)
                 
@@ -113,6 +118,9 @@ class AirfoilAnalyzer:
             except Exception as e:
                 print(f"✗ Error analyzing {airfoil_file}: {e}")
                 continue
+        
+        if progress_callback:
+            progress_callback(total, total, "Analysis complete!")
         
         # Return combined DataFrame
         if all_results:
