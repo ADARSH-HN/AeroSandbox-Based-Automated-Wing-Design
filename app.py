@@ -17,7 +17,6 @@ from utils import save_dataframe_csv
 # Page config
 st.set_page_config(
     page_title="Wing Analyzer",
-    page_icon="✈️",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -59,15 +58,15 @@ def main():
     st.markdown("---")
     
     # Sidebar - Parameters
-    st.sidebar.title("⚙️ Configuration")
+    st.sidebar.title("Configuration")
     
     # Tabs
     tab1, tab2, tab3, tab4, tab5 = st.tabs([
-        "🏠 Home", 
-        "📊 Airfoil Analysis", 
-        "🏆 Ranking & Selection",
-        "🛩️ Wing Design",
-        "📈 Visualizations"
+        "Home", 
+        "Airfoil Analysis", 
+        "Ranking & Selection",
+        "Wing Design",
+        "Visualizations"
     ])
     
     # ===== TAB 1: HOME =====
@@ -77,7 +76,7 @@ def main():
         col1, col2 = st.columns(2)
         
         with col1:
-            st.subheader("📋 Overview")
+            st.subheader("Overview")
             st.write("""
             This application helps you:
             - Analyze multiple airfoils using NeuralFoil
@@ -87,7 +86,7 @@ def main():
             - Select wings that meet weight requirements
             """)
             
-            st.subheader("🚀 Quick Start")
+            st.subheader("Quick Start")
             st.write("""
             1. Configure parameters in the sidebar
             2. Go to **Airfoil Analysis** to analyze airfoils
@@ -116,7 +115,7 @@ def main():
                 st.error("❌ Airfoils folder not found!")
             
             # Design parameters
-            st.subheader("🎯 Design Parameters")
+            st.subheader("Design Parameters")
             mtow = st.number_input("MTOW (kg)", value=float(DEFAULT_MTOW_KGS), min_value=0.1, step=0.1)
             max_span = st.number_input("Max Wingspan (m)", value=float(DEFAULT_MAX_WINGSPAN), min_value=0.1, step=0.1)
             velocity = st.number_input("Design Velocity (m/s)", value=float(DEFAULT_VELOCITY), min_value=1.0, step=0.5)
@@ -138,7 +137,7 @@ def main():
     
     # ===== TAB 2: AIRFOIL ANALYSIS =====
     with tab2:
-        st.header("📊 Airfoil Analysis")
+        st.header("Airfoil Analysis")
         
         st.write("Analyze airfoils using NeuralFoil across a range of angles of attack and Reynolds numbers.")
         
@@ -150,7 +149,7 @@ def main():
         with col3:
             st.metric("Model", NEURALFOIL_MODEL_SIZE)
         
-        if st.button("🚀 Start Airfoil Analysis", type="primary", use_container_width=True):
+        if st.button("Start Airfoil Analysis", type="primary", use_container_width=True):
             if not hasattr(st.session_state, 'airfoils_folder'):
                 st.error("Please configure parameters in Home tab first!")
                 return
@@ -176,9 +175,7 @@ def main():
                     st.session_state.db = db
                     st.session_state.analysis_complete = True
                     
-                    st.success(f"✓ Analysis complete! Analyzed {db['airfoil_name'].nunique()} airfoils")
-                    st.balloons()
-                    
+                    st.success(f"✓ Analysis complete! Analyzed {db['airfoil_name'].nunique()} airfoils")                    
                 except Exception as e:
                     st.error(f"Error during analysis: {e}")
         
@@ -200,13 +197,13 @@ def main():
                 st.metric("Alpha Points", db['alpha_deg'].nunique())
             
             # Show sample data
-            with st.expander("📄 View Raw Data"):
+            with st.expander("View Raw Data"):
                 st.dataframe(db.head(100), use_container_width=True)
             
             # Download button
             csv = db.to_csv(index=False).encode('utf-8')
             st.download_button(
-                label="📥 Download Full Analysis CSV",
+                label="Download Full Analysis CSV",
                 data=csv,
                 file_name="airfoil_analysis.csv",
                 mime="text/csv"
@@ -214,10 +211,10 @@ def main():
     
     # ===== TAB 3: RANKING & SELECTION =====
     with tab3:
-        st.header("🏆 Airfoil Ranking & Selection")
+        st.header("Airfoil Ranking & Selection")
         
         if not st.session_state.analysis_complete:
-            st.warning("⚠️ Please complete airfoil analysis first!")
+            st.warning("Please complete airfoil analysis first!")
             return
         
         st.write("Score and rank airfoils based on mission requirements.")
@@ -232,7 +229,7 @@ def main():
             )
             st.dataframe(weights_df, use_container_width=True)
         
-        if st.button("📊 Calculate Rankings", type="primary", use_container_width=True):
+        if st.button("Calculate Rankings", type="primary", use_container_width=True):
             with st.spinner("Processing and scoring airfoils..."):
                 try:
                     # Create combined dataframe
@@ -291,7 +288,7 @@ def main():
             # Download ranked results
             csv = ranked_df.to_csv(index=False).encode('utf-8')
             st.download_button(
-                label="📥 Download Ranked Results",
+                label="Download Ranked Results",
                 data=csv,
                 file_name="ranked_airfoils.csv",
                 mime="text/csv"
@@ -299,10 +296,10 @@ def main():
     
     # ===== TAB 4: WING DESIGN =====
     with tab4:
-        st.header("🛩️ Wing Design & Analysis")
+        st.header("Wing Design & Analysis")
         
         if st.session_state.ranked_df is None:
-            st.warning("⚠️ Please complete ranking first!")
+            st.warning("Please complete ranking first!")
             return
         
         st.write("Generate wing configurations and perform VLM analysis.")
@@ -321,7 +318,7 @@ def main():
             st.metric("MTOW", f"{st.session_state.mtow} kg")
         
         # Step 1: Generate configurations
-        if st.button("🔧 Generate Wing Configurations", type="primary", use_container_width=True):
+        if st.button("Generate Wing Configurations", type="primary", use_container_width=True):
             with st.spinner("Generating wing configurations..."):
                 try:
                     designer = WingDesigner(
@@ -372,7 +369,7 @@ def main():
                             st.error(f"Error during VLM analysis: {e}")
             else:
                 # Skip VLM and use configs directly
-                st.info("ℹ️ VLM analysis skipped. Using approximate aerodynamics.")
+                st.info("ℹVLM analysis skipped. Using approximate aerodynamics.")
                 st.session_state.wing_para_df = st.session_state.wing_configs.copy()
         
         # Step 3: Filter suitable wings
@@ -380,7 +377,7 @@ def main():
             st.markdown("---")
             st.subheader("Suitable Wings Meeting MTOW")
             
-            if st.button("✅ Filter Suitable Wings", type="primary", use_container_width=True):
+            if st.button("Filter Suitable Wings", type="primary", use_container_width=True):
                 with st.spinner("Filtering wings..."):
                     try:
                         selector = WingSelector(
@@ -425,10 +422,10 @@ def main():
     
     # ===== TAB 5: VISUALIZATIONS =====
     with tab5:
-        st.header("📈 Aerodynamic Visualizations")
+        st.header("Aerodynamic Visualizations")
         
         if not st.session_state.analysis_complete:
-            st.warning("⚠️ Please complete airfoil analysis first!")
+            st.warning("Please complete airfoil analysis first!")
             return
         
         db = st.session_state.db

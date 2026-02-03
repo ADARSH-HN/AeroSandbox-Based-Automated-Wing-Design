@@ -10,9 +10,9 @@ DEFAULT_VELOCITY = 13.0  # m/s
 DEFAULT_ASPECT_RATIOS = [3, 4, 5, 6, 7]
 
 # Airfoil Analysis Parameters
-ALPHA_MIN = -10  # Minimum angle of attack
+ALPHA_MIN = -5  # Minimum angle of attack
 ALPHA_MAX = 20   # Maximum angle of attack
-ALPHA_STEP = 0.1 # Angle step size
+ALPHA_STEP = 0.2 # Angle step size
 RE_MIN = 1.5e5   # Minimum Reynolds number
 RE_MAX = 4e5     # Maximum Reynolds number
 RE_POINTS = 10   # Number of Reynolds number points
