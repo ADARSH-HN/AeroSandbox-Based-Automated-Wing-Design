@@ -156,12 +156,13 @@ class WingAnalyzer:
         
         return aero
     
-    def analyze_all_wings(self, wing_configs_df):
+    def analyze_all_wings(self, wing_configs_df, progress_callback=None):
         """
         Run VLM analysis on all wing configurations
         
         Args:
             wing_configs_df: DataFrame with wing configurations
+            progress_callback: Optional callback function(current, total, message)
         
         Returns:
             DataFrame with VLM results added
@@ -171,6 +172,9 @@ class WingAnalyzer:
         
         for idx, row in wing_configs_df.iterrows():
             try:
+                if progress_callback:
+                    progress_callback(idx, total, f"Analyzing wing {idx+1}/{total}: {row['airfoil_name']}")
+                
                 print(f"Progress: {idx+1}/{total}")
                 
                 wing_para = self.analyze_wing(
@@ -189,6 +193,9 @@ class WingAnalyzer:
             except Exception as e:
                 print(f"✗ Error analyzing wing {row['airfoil_name']}: {e}")
                 continue
+        
+        if progress_callback:
+            progress_callback(total, total, "VLM analysis complete!")
         
         return pd.DataFrame(wing_results)
 
