@@ -12,14 +12,14 @@ DEFAULT_ASPECT_RATIOS = [3, 4, 5, 6, 7]
 # Airfoil Analysis Parameters
 ALPHA_MIN = -5  # Minimum angle of attack
 ALPHA_MAX = 20   # Maximum angle of attack
-ALPHA_STEP = 0.2 # Angle step size
+ALPHA_STEP = 0.3 # Angle step size
 RE_MIN = 1.5e5   # Minimum Reynolds number
-RE_MAX = 4e5     # Maximum Reynolds number
-RE_POINTS = 10   # Number of Reynolds number points
+RE_MAX = 2e5     # Maximum Reynolds number
+RE_POINTS = 3   # Number of Reynolds number points
 MACH_BASE = 343  # Speed of sound for Mach calculation
 
 # NeuralFoil Configuration
-NEURALFOIL_MODEL_SIZE = "xxxlarge"
+NEURALFOIL_MODEL_SIZE = "xxsmall" # Model size for NeuralFoil analysis "xxsmall"	"xsmall"	"small"	"medium"	"large"	"xlarge"	"xxlarge"	"xxxlarge"
 
 # Operating Range for Optimization
 OPER_ALPHA_MIN = 0
