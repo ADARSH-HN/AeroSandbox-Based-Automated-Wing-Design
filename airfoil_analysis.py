@@ -104,7 +104,6 @@ class AirfoilAnalyzer:
                     progress_callback(idx, total, f"Analyzing {airfoil_file.split('.')[0]}...")
                 
                 df = self.analyze_airfoil(airfoil_file)
-                all_results.append(df)
                 
                 # Append to CSV incrementally
                 df.to_csv(
@@ -113,7 +112,16 @@ class AirfoilAnalyzer:
                     header=not os.path.exists(output_file),
                     index=False,
                 )
+                
+                # For large datasets, only keep data in memory if reasonable
+                if total < 50:  # Keep in memory for small datasets
+                    all_results.append(df)
+                
                 print(f"✓ Saved results for {airfoil_file.split('.')[0]}")
+                
+            except Exception as e:
+                print(f"✗ Error analyzing {airfoil_file}: {e}")
+                continue
                 
             except Exception as e:
                 print(f"✗ Error analyzing {airfoil_file}: {e}")
