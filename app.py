@@ -196,9 +196,7 @@ def main():
         if st.session_state.analysis_complete and st.session_state.db is not None:
             st.markdown("---")
             st.subheader("Analysis Results")
-            
             db = st.session_state.db
-            
             col1, col2, col3, col4 = st.columns(4)
             with col1:
                 st.metric("Total Airfoils", db['airfoil_name'].nunique())
@@ -211,7 +209,9 @@ def main():
             
             # Show sample data
             with st.expander("View Raw Data"):
-                st.dataframe(db.head(100), use_container_width=True)
+                display_db = db.head(100).copy()
+                display_db.index = range(1, len(display_db) + 1)
+                st.dataframe(display_db, use_container_width=True)
             
             # Download button
             csv = db.to_csv(index=False).encode('utf-8')
@@ -286,8 +286,10 @@ def main():
                 "angle_diff", "score"
             ]
             
+            display_ranked = ranked_df[display_cols].head(top_n).copy()
+            display_ranked.index = range(1, len(display_ranked) + 1)
             st.dataframe(
-                ranked_df[display_cols].head(top_n),
+                display_ranked,
                 use_container_width=True,
                 height=400
             )
@@ -347,7 +349,9 @@ def main():
                     st.success(f"✓ Generated {len(wing_configs)} wing configurations!")
                     
                     # Show preview
-                    st.dataframe(wing_configs.head(20), use_container_width=True)
+                    display_configs = wing_configs.head(20).copy()
+                    display_configs.index = range(1, len(display_configs) + 1)
+                    st.dataframe(display_configs, use_container_width=True)
                 
                 # Step 1b: Run VLM analysis immediately
                 st.markdown("---")
@@ -401,11 +405,13 @@ def main():
                         st.success(f"✓ Found {len(ranked_suitable)} suitable wings!")
                         
                         # Display results
+                        display_suitable = ranked_suitable[[
+                            "airfoil_name", "Aspect_Ratio", "Suitable_chord",
+                            "Wingspan_m", "Lift_Kgs", "MAX_CL/CD", "final_score"
+                        ]].head(20).copy()
+                        display_suitable.index = range(1, len(display_suitable) + 1)
                         st.dataframe(
-                            ranked_suitable[[
-                                "airfoil_name", "Aspect_Ratio", "Suitable_chord",
-                                "Wingspan_m", "Lift_Kgs", "MAX_CL/CD", "final_score"
-                            ]].head(20),
+                            display_suitable,
                             use_container_width=True
                         )
                         
@@ -416,7 +422,7 @@ def main():
                         # Download
                         csv = ranked_suitable.to_csv(index=False).encode('utf-8')
                         st.download_button(
-                            label="📥 Download Suitable Wings",
+                            label="Download Suitable Wings",
                             data=csv,
                             file_name="suitable_wings.csv",
                             mime="text/csv"
