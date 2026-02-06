@@ -251,6 +251,7 @@ class WingSelector:
                 suitable_wings.append({
                     "airfoil_name": row["airfoil_name"],
                     "Re": row["Re"],
+                    "velocity": row["velocity"],
                     "Aspect_Ratio": row["Aspect_Ratio"],
                     "Suitable_chord": row["Suitable_chord"],
                     "Wingspan_m": row["Wingspan_m"],

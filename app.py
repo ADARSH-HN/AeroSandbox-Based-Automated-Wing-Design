@@ -53,7 +53,7 @@ def main():
     """Main application"""
     
     # Header
-    st.markdown('<h1 class="main-header">✈️ Wing Analyzer Pro</h1>', unsafe_allow_html=True)
+    st.markdown('<h1 class="main-header"> Wing Analyzer </h1>', unsafe_allow_html=True)
     st.markdown("**Aerodynamic Analysis & Wing Design Tool for RC Aircraft**")
     st.markdown("---")
     
