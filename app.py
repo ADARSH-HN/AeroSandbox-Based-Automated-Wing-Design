@@ -16,7 +16,7 @@ from utils import save_dataframe_csv
 
 # Page config
 st.set_page_config(
-    page_title="Wing Analyzer",
+    page_title="Winglytics",
     layout="wide",
     initial_sidebar_state="expanded"
 )
