@@ -1,4 +1,4 @@
-# ✈️ Wing Analyzer 
+# ✈️ Winglytics 
 
 **Aerodynamic Analysis & Wing Design Tool for RC Aircraft**
 
